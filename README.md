@@ -1,2 +1,0 @@
-# ghg-dashboard
-GHG dashboard
