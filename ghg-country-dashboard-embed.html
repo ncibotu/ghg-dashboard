@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Household GHG Impact — Global Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07090d;
+  --surface: #0d1117;
+  --surface2: #131920;
+  --border: #1c2733;
+  --border2: #243040;
+  --text: #d4e4f4;
+  --muted: #5a7a94;
+  --dim: #2a3d50;
+  --accent: #38bdf8;
+  --accent2: #7dd3fc;
+  --green: #4ade80;
+  --yellow: #fbbf24;
+  --red: #f87171;
+  --purple: #c084fc;
+
+  --c-transport: #60a5fa;
+  --c-energy: #fbbf24;
+  --c-diet: #4ade80;
+  --c-goods: #c084fc;
+
+  --c-high: #4ade80;
+  --c-medium: #fbbf24;
+  --c-low: #f87171;
+  --c-variable: #60a5fa;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Subtle dot grid */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background-image: radial-gradient(rgba(56,189,248,0.06) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events:none; z-index:0;
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.shell { display:flex; min-height:100vh; position:relative; z-index:1; }
+
+/* Sidebar */
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-logo h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 2px;
+  line-height: 1;
+  color: var(--text);
+}
+
+.sidebar-logo h1 span { color: var(--accent); }
+.sidebar-logo p { font-size: 11px; color: var(--muted); margin-top:6px; letter-spacing:.04em; }
+
+.sidebar-section-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: var(--dim);
+  padding: 18px 24px 8px;
+}
+
+/* Country nav */
+.country-nav { padding: 0 12px; }
+
+.country-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: all .18s;
+  margin-bottom: 2px;
+}
+
+.country-btn:hover { background: var(--surface2); color: var(--text); }
+.country-btn.active { background: rgba(56,189,248,.1); color: var(--accent); }
+
+.country-btn .flag {
+  width: 22px; height: 16px;
+  border-radius: 3px;
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.country-btn .hh-badge {
+  margin-left: auto;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
+  flex-shrink: 0;
+}
+
+.country-btn.active .hh-badge { color: var(--accent); }
+
+/* Compare button */
+.compare-btn {
+  margin: 8px 12px 0;
+  width: calc(100% - 24px);
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px dashed var(--border2);
+  background: transparent;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: all .18s;
+}
+.compare-btn:hover, .compare-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(56,189,248,.05);
+}
+
+/* Grid legend */
+.grid-legend {
+  margin-top: auto;
+  padding: 20px 24px;
+  border-top: 1px solid var(--border);
+}
+
+.grid-legend p { font-size: 9px; color: var(--dim); margin-bottom: 10px; text-transform:uppercase; letter-spacing:.1em; }
+
+.grid-bar { display:flex; gap:3px; height:6px; border-radius:99px; overflow:hidden; margin-bottom:6px; }
+.grid-bar-seg { flex:1; }
+
+.grid-label { display:flex; justify-content:space-between; font-size:9px; color:var(--muted); font-family:'DM Mono',monospace; }
+
+/* ── MAIN ───────────────────────────────────────────────── */
+.main { flex: 1; padding: 32px 32px 60px; max-width: 1200px; }
+
+/* Page header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.country-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.country-flag-lg { font-size: 36px; line-height: 1; }
+
+.country-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 42px;
+  letter-spacing: 3px;
+  line-height: 1;
+  color: var(--text);
+}
+
+.country-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* KPI strip */
+.kpi-strip {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  text-align: right;
+  min-width: 110px;
+}
+
+.kpi-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.kpi-label {
+  font-size: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  margin-top: 3px;
+}
+
+/* ── FILTERS ─────────────────────────────────────────────── */
+.filters-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filters-label { font-size: 10px; color: var(--dim); text-transform:uppercase; letter-spacing:.1em; margin-right:4px; }
+
+.ftag {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .18s;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.ftag .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.ftag:hover { border-color: var(--border2); color: var(--text); }
+.ftag.active { color: var(--text); }
+.ftag[data-cat="all"].active { border-color: var(--accent); background: rgba(56,189,248,.08); color: var(--accent); }
+.ftag[data-cat="Transportation"].active { border-color: var(--c-transport); background: rgba(96,165,250,.08); color: var(--c-transport); }
+.ftag[data-cat="Home Energy"].active { border-color: var(--c-energy); background: rgba(251,191,36,.08); color: var(--c-energy); }
+.ftag[data-cat="Diet & Food"].active { border-color: var(--c-diet); background: rgba(74,222,128,.08); color: var(--c-diet); }
+.ftag[data-cat="Goods & Waste"].active { border-color: var(--c-goods); background: rgba(192,132,252,.08); color: var(--c-goods); }
+
+.sort-sep { width:1px; height:20px; background:var(--border); margin:0 4px; }
+
+.sort-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--dim);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all .18s;
+  text-transform: uppercase;
+  letter-spacing:.06em;
+}
+.sort-btn:hover { color: var(--muted); border-color: var(--border); }
+.sort-btn.active { color: var(--accent); border-color: var(--dim); background: rgba(56,189,248,.05); }
+
+/* ── ACTION CARDS ────────────────────────────────────────── */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: all .22s ease;
+  animation: cardIn .35s ease both;
+}
+
+@keyframes cardIn {
+  from { opacity:0; transform: translateY(10px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+.card::after {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:2px;
+}
+.card[data-cat="Transportation"]::after { background: var(--c-transport); }
+.card[data-cat="Home Energy"]::after    { background: var(--c-energy); }
+.card[data-cat="Diet & Food"]::after    { background: var(--c-diet); }
+.card[data-cat="Goods & Waste"]::after  { background: var(--c-goods); }
+
+.card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 48px rgba(0,0,0,.5);
+}
+
+.card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+
+.cat-tag {
+  font-size: 9px;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-weight:600;
+}
+.cat-tag[data-cat="Transportation"] { background:rgba(96,165,250,.12); color:var(--c-transport); }
+.cat-tag[data-cat="Home Energy"]    { background:rgba(251,191,36,.12);  color:var(--c-energy); }
+.cat-tag[data-cat="Diet & Food"]    { background:rgba(74,222,128,.12);  color:var(--c-diet); }
+.cat-tag[data-cat="Goods & Waste"]  { background:rgba(192,132,252,.12); color:var(--c-goods); }
+
+.rel-tag {
+  font-size: 9px;
+  font-weight: 600;
+  font-family: 'DM Mono', monospace;
+  letter-spacing:.06em;
+}
+.rel-tag.High     { color: var(--c-high); }
+.rel-tag.Medium   { color: var(--c-medium); }
+.rel-tag.Low      { color: var(--c-low); }
+.rel-tag.Variable { color: var(--c-variable); }
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 5px;
+  line-height: 1.25;
+}
+
+.card-desc { font-size: 11px; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
+
+/* Big number */
+.co2-row { display:flex; align-items:baseline; gap:5px; margin-bottom:14px; }
+.co2-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 44px;
+  line-height: 1;
+  color: var(--accent);
+}
+.co2-unit { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+/* Impact bar */
+.bar-wrap { margin-bottom: 14px; }
+.bar-meta { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-bottom:5px; }
+.bar-pct { font-family:'DM Mono',monospace; font-weight:500; color:var(--text); }
+.bar-track { height:5px; background:var(--border); border-radius:99px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:99px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+.card[data-cat="Transportation"] .bar-fill { background:var(--c-transport); }
+.card[data-cat="Home Energy"]    .bar-fill { background:var(--c-energy); }
+.card[data-cat="Diet & Food"]    .bar-fill { background:var(--c-diet); }
+.card[data-cat="Goods & Waste"]  .bar-fill { background:var(--c-goods); }
+
+/* Metrics */
+.metrics { display:grid; grid-template-columns:1fr 1fr; gap:10px; border-top:1px solid var(--border); padding-top:14px; }
+.metric-label { font-size:9px; color:var(--dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px; }
+
+.diff-dots { display:flex; gap:3px; align-items:center; }
+.diff-dot { width:8px; height:8px; border-radius:2px; background:var(--border); }
+.diff-dot.easy   { background:var(--green); }
+.diff-dot.mod    { background:var(--yellow); }
+.diff-dot.hard   { background:var(--red); }
+
+.diff-label { font-size:10px; font-weight:500; margin-left:5px; }
+.diff-label.Easy     { color:var(--green); }
+.diff-label.Moderate { color:var(--yellow); }
+.diff-label.Hard     { color:var(--red); }
+
+.cost-pill {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:10px; font-weight:600;
+  padding: 3px 8px; border-radius:4px;
+}
+.cost-pill.Saves   { background:rgba(74,222,128,.1); color:var(--green); }
+.cost-pill.Neutral { background:rgba(90,122,148,.12); color:var(--muted); }
+.cost-pill.Costs   { background:rgba(248,113,113,.1); color:var(--red); }
+
+.cost-detail { font-size:10px; color:var(--muted); margin-top:3px; }
+
+/* Relevance note (expanded) */
+.rel-note {
+  grid-column: 1/-1;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.5;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+/* ── COMPARE VIEW ────────────────────────────────────────── */
+.compare-view { display:none; }
+.compare-view.active { display:block; }
+.actions-view { display:block; }
+.actions-view.hidden { display:none; }
+
+.compare-table-wrap { overflow-x:auto; }
+
+.compare-table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:11px;
+}
+
+.compare-table th {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  text-align:center;
+  font-family:'DM Mono',monospace;
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color: var(--muted);
+  white-space:nowrap;
+}
+
+.compare-table th.action-col { text-align:left; width:220px; }
+.compare-table th.country-th { color:var(--accent); font-size:10px; }
+
+.compare-table td {
+  border: 1px solid var(--border);
+  padding: 9px 12px;
+  vertical-align:middle;
+}
+
+.compare-table tr:nth-child(even) td { background: rgba(13,17,23,.6); }
+.compare-table tr:hover td { background: var(--surface2); }
+
+.compare-table td.action-name {
+  font-weight:600;
+  font-size:12px;
+  color:var(--text);
+}
+
+.compare-table td.cat-cell {
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-weight:600;
+  white-space:nowrap;
+}
+
+.co2-cell {
+  font-family:'DM Mono',monospace;
+  font-size:12px;
+  font-weight:500;
+  text-align:right;
+  color:var(--accent);
+}
+
+.pct-cell {
+  font-family:'DM Mono',monospace;
+  font-size:10px;
+  text-align:right;
+  color:var(--muted);
+}
+
+.rel-cell {
+  text-align:center;
+  font-size:9px;
+  font-weight:700;
+  font-family:'DM Mono',monospace;
+}
+
+.rel-cell.High     { color:var(--c-high); }
+.rel-cell.Medium   { color:var(--c-medium); }
+.rel-cell.Low      { color:var(--c-low); }
+.rel-cell.Variable { color:var(--c-variable); }
+
+/* category row divider */
+.cat-divider td {
+  background: var(--surface) !important;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:13px;
+  letter-spacing:2px;
+  padding: 8px 12px;
+}
+
+/* ── COMPARE TOGGLE: CO2e vs REL ─────────────────────────── */
+.compare-toggle {
+  display:flex; gap:8px; margin-bottom:16px; align-items:center;
+}
+.ctoggle-btn {
+  padding:6px 14px; border-radius:6px; border:1px solid var(--border);
+  background:transparent; color:var(--muted); font-family:'DM Mono',monospace;
+  font-size:10px; text-transform:uppercase; letter-spacing:.06em; cursor:pointer; transition:all .18s;
+}
+.ctoggle-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(56,189,248,.07); }
+
+/* ── NO RESULTS ──────────────────────────────────────────── */
+.no-results { grid-column:1/-1; text-align:center; padding:60px; color:var(--dim); font-size:13px; }
+
+/* ── CATEGORY SUMMARY STRIP ──────────────────────────────── */
+.cat-summary {
+  display:grid;
+  grid-template-columns: repeat(4,1fr);
+  gap:12px;
+  margin-bottom:24px;
+}
+
+.cs-card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px 16px;
+  cursor:pointer;
+  transition: all .2s;
+}
+.cs-card:hover { border-color:var(--border2); }
+.cs-card.active { }
+.cs-card[data-cat="Transportation"].active { border-color:var(--c-transport); }
+.cs-card[data-cat="Home Energy"].active    { border-color:var(--c-energy); }
+.cs-card[data-cat="Diet & Food"].active    { border-color:var(--c-diet); }
+.cs-card[data-cat="Goods & Waste"].active  { border-color:var(--c-goods); }
+
+.cs-label { font-size:9px; text-transform:uppercase; letter-spacing:.1em; margin-bottom:6px; }
+.cs-card[data-cat="Transportation"] .cs-label { color:var(--c-transport); }
+.cs-card[data-cat="Home Energy"]    .cs-label { color:var(--c-energy); }
+.cs-card[data-cat="Diet & Food"]    .cs-label { color:var(--c-diet); }
+.cs-card[data-cat="Goods & Waste"]  .cs-label { color:var(--c-goods); }
+
+.cs-val {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:28px;
+  line-height:1;
+  color:var(--text);
+}
+
+.cs-sub { font-size:10px; color:var(--muted); margin-top:4px; }
+
+.cs-bar { height:3px; border-radius:99px; margin-top:10px; }
+.cs-card[data-cat="Transportation"] .cs-bar { background:var(--c-transport); }
+.cs-card[data-cat="Home Energy"]    .cs-bar { background:var(--c-energy); }
+.cs-card[data-cat="Diet & Food"]    .cs-bar { background:var(--c-diet); }
+.cs-card[data-cat="Goods & Waste"]  .cs-bar { background:var(--c-goods); }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width:900px) {
+  .sidebar { display:none; }
+  .main { padding:20px; }
+  .cat-summary { grid-template-columns:repeat(2,1fr); }
+  .country-name { font-size:30px; }
+}
+
+@media (max-width:700px) {
+  .shell { flex-direction:column; }
+  .sidebar { display:none; }
+  .main { padding:14px; }
+  .cat-summary { grid-template-columns:1fr 1fr; }
+  .page-header { flex-direction:column; gap:12px; }
+  .kpi-strip { flex-wrap:wrap; }
+}
+
+@media (max-width:600px) {
+  .cat-summary { grid-template-columns:1fr 1fr; }
+  .cards { grid-template-columns:1fr; }
+  .kpi-strip { gap:8px; }
+  .kpi { padding:10px 12px; min-width:80px; }
+  .kpi-val { font-size:20px; }
+  .country-name { font-size:22px; letter-spacing:2px; }
+  .filters-bar { gap:5px; }
+  .ftag { padding:5px 9px; font-size:11px; }
+}
+
+@media (max-width:480px) {
+  .cat-summary { grid-template-columns:1fr; }
+  .main { padding:10px; }
+  .cs-val { font-size:22px; }
+}
+
+/* Mobile / embed country selector */
+.mobile-country-select {
+  display:none;
+  padding:10px 14px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+@media(max-width:900px){ .mobile-country-select{ display:block; } }
+
+.mobile-country-select select {
+  width:100%;
+  background:var(--surface2);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:9px 14px;
+  font-family:'DM Sans',sans-serif;
+  font-size:14px;
+  cursor:pointer;
+}
+
+.mobile-country-select select option {
+  background:var(--surface2);
+  color:var(--text);
+}
+
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ── SIDEBAR ──────────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>HOUSEHOLD<br><span>GHG</span></h1>
+      <p>Most impactful actions by country</p>
+    </div>
+
+    <div class="sidebar-section-label">Select Country</div>
+    <nav class="country-nav" id="country-nav"></nav>
+
+    <div class="sidebar-section-label" style="margin-top:12px">Views</div>
+    <div style="padding:0 12px">
+      <button class="compare-btn" id="compare-toggle-btn">⊞ Compare All Countries</button>
+    </div>
+
+    <div class="grid-legend">
+      <p>Grid intensity scale</p>
+      <div class="grid-bar">
+        <div class="grid-bar-seg" style="background:#4ade80"></div>
+        <div class="grid-bar-seg" style="background:#86efac"></div>
+        <div class="grid-bar-seg" style="background:#fbbf24"></div>
+        <div class="grid-bar-seg" style="background:#fb923c"></div>
+        <div class="grid-bar-seg" style="background:#f87171"></div>
+      </div>
+      <div class="grid-label"><span>Clean</span><span>gCO₂/kWh</span><span>Dirty</span></div>
+    </div>
+  </aside>
+
+  <!-- Mobile country selector -->
+  <div class="mobile-country-select">
+    <select id="mobile-select"></select>
+  </div>
+
+  <!-- ── MAIN ─────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Page header -->
+    <div class="page-header" id="page-header">
+      <div class="country-title">
+        <span class="country-flag-lg" id="hdr-flag"></span>
+        <div>
+          <div class="country-name" id="hdr-name"></div>
+          <div class="country-sub" id="hdr-sub"></div>
+        </div>
+      </div>
+      <div class="kpi-strip" id="kpi-strip"></div>
+    </div>
+
+    <!-- Category summary strip -->
+    <div class="cat-summary" id="cat-summary"></div>
+
+    <!-- Filters (single-country view) -->
+    <div class="actions-view" id="actions-view">
+      <div class="filters-bar" id="filters-bar">
+        <span class="filters-label">Filter:</span>
+        <button class="ftag active" data-cat="all">All</button>
+        <button class="ftag" data-cat="Transportation"><span class="dot" style="background:var(--c-transport)"></span>Transport</button>
+        <button class="ftag" data-cat="Home Energy"><span class="dot" style="background:var(--c-energy)"></span>Energy</button>
+        <button class="ftag" data-cat="Diet & Food"><span class="dot" style="background:var(--c-diet)"></span>Diet</button>
+        <button class="ftag" data-cat="Goods & Waste"><span class="dot" style="background:var(--c-goods)"></span>Goods</button>
+        <div class="sort-sep"></div>
+        <span class="filters-label">Sort:</span>
+        <button class="sort-btn active" data-sort="impact">Impact ↓</button>
+        <button class="sort-btn" data-sort="pct">% Footprint</button>
+        <button class="sort-btn" data-sort="easy">Easiest first</button>
+      </div>
+
+      <!-- Cards grid -->
+      <div class="cards" id="cards-grid"></div>
+    </div>
+
+    <!-- Compare view -->
+    <div class="compare-view" id="compare-view">
+      <div class="compare-toggle">
+        <span class="filters-label">Show:</span>
+        <button class="ctoggle-btn active" data-mode="co2e">CO₂e (kg/yr)</button>
+        <button class="ctoggle-btn" data-mode="pct">% HH Footprint</button>
+        <button class="ctoggle-btn" data-mode="rel">Relevance</button>
+      </div>
+      <div class="compare-table-wrap">
+        <table class="compare-table" id="compare-table"></table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+
+const COUNTRIES = {
+  "United States": { code:"US", flag:"🇺🇸", currency:"USD", symbol:"$", fx:1.00,
+    grid_g:386, hh_t:16.0, car_own:91, fly_rate:"High", meat_idx:1.00, renew_pct:22, color:"#3b82f6" },
+  "United Kingdom": { code:"UK", flag:"🇬🇧", currency:"GBP", symbol:"£", fx:0.79,
+    grid_g:148, hh_t:8.5, car_own:78, fly_rate:"High", meat_idx:0.70, renew_pct:48, color:"#ef4444" },
+  "European Union": { code:"EU", flag:"🇪🇺", currency:"EUR", symbol:"€", fx:0.92,
+    grid_g:258, hh_t:9.0, car_own:72, fly_rate:"Medium", meat_idx:0.75, renew_pct:43, color:"#f59e0b" },
+  "France": { code:"FR", flag:"🇫🇷", currency:"EUR", symbol:"€", fx:0.92,
+    grid_g:56, hh_t:8.0, car_own:76, fly_rate:"High", meat_idx:0.82, renew_pct:89, color:"#a78bfa" },
+  "China": { code:"CN", flag:"🇨🇳", currency:"CNY", symbol:"¥", fx:7.24,
+    grid_g:541, hh_t:7.5, car_own:44, fly_rate:"Medium", meat_idx:0.65, renew_pct:33, color:"#f87171" },
+  "India": { code:"IN", flag:"🇮🇳", currency:"INR", symbol:"₹", fx:83.5,
+    grid_g:633, hh_t:2.5, car_own:22, fly_rate:"Low", meat_idx:0.18, renew_pct:22, color:"#fb923c" },
+  "Australia": { code:"AU", flag:"🇦🇺", currency:"AUD", symbol:"A$", fx:1.53,
+    grid_g:494, hh_t:15.4, car_own:88, fly_rate:"High", meat_idx:0.95, renew_pct:35, color:"#34d399" },
+  "Canada": { code:"CA", flag:"🇨🇦", currency:"CAD", symbol:"C$", fx:1.36,
+    grid_g:150, hh_t:14.2, car_own:89, fly_rate:"High", meat_idx:0.90, renew_pct:68, color:"#e879f9" },
+};
+
+const US_GRID = 386;
+
+const ACTIONS = [
+  { cat:"Transportation", action:"Go car-free or car-lite",
+    desc:"Eliminating or greatly reducing car use. Includes avoided manufacturing, fuel, and maintenance emissions.",
+    co2e_us:4800, diff:3, diff_lbl:"Hard", cost_type:"Saves", cost_lo:5000, cost_hi:10000,
+    grid_sensitive:false, diet_sensitive:false,
+    relevance:{ US:["High","Very high car dependency; transformative action"],
+      UK:["High","High car use despite good urban transit"], EU:["Medium","Better transit infrastructure reduces gap"],
+      FR:["Medium","Good rail/transit; urban density helps but rural car dependency high"],
+      CN:["Medium","Rapid EV transition; urban transit growing fast"],
+      IN:["Low","Low car ownership; most already car-lite"],
+      AU:["High","Extreme car dependency; very limited public transit"],
+      CA:["High","High car dependency across vast distances"] } },
+
+  { cat:"Transportation", action:"Avoid 1 long-haul flight/year",
+    desc:"One transatlantic/transpacific round-trip generates 1.5–3 t CO₂e per passenger including radiative forcing.",
+    co2e_us:2500, diff:2, diff_lbl:"Moderate", cost_type:"Saves", cost_lo:500, cost_hi:2000,
+    grid_sensitive:false, diet_sensitive:false,
+    relevance:{ US:["High","Among highest per-capita flyers globally"],
+      UK:["High","Highest per-capita aviation emissions in Europe"],
+      EU:["High","Short-haul flying very common; long-haul growing"],
+      FR:["High","Paris CDG is Europe's 2nd busiest hub; French fly frequently despite good rail"],
+      CN:["Medium","Rapidly growing aviation; urban middle class driving demand"],
+      IN:["Low","Low per-capita flying rate; domestic flights growing slowly"],
+      AU:["High","Geographic isolation means very long flights; huge impact"],
+      CA:["High","Large distances; high per-capita flying rate"] } },
+
+  { cat:"Transportation", action:"Switch to an electric vehicle",
+    desc:"Replacing a petrol car with a BEV. Savings scale with grid carbon intensity — cleaner grid = more benefit.",
+    co2e_us:2400, diff:2, diff_lbl:"Moderate", cost_type:"Neutral", cost_lo:0, cost_hi:0,
+    grid_sensitive:true, diet_sensitive:false,
+    relevance:{ US:["High","Large fleet; high fuel use; growing charging infrastructure"],
+      UK:["High","Increasingly clean grid makes EVs very effective"],
+      EU:["High","Clean grid in many countries; strong EV policy support"],
+      FR:["Low","France's nuclear grid is already so clean that EV benefit is very limited — biggest gain is avoided petrol"],
+      CN:["Variable","Dominates EV market but coal-heavy grid limits benefit"],
+      IN:["Low","Low car ownership; very coal-heavy grid reduces benefit significantly"],
+      AU:["Medium","High car use but still coal-heavy grid; rapidly improving"],
+      CA:["High","Very clean grid in most provinces; high car dependency"] } },
+
+  { cat:"Transportation", action:"Use public transit for daily commute",
+    desc:"Switching from solo car commuting to rail or bus. Cuts per-mile emissions 45–76%.",
+    co2e_us:1000, diff:2, diff_lbl:"Moderate", cost_type:"Saves", cost_lo:3000, cost_hi:5000,
+    grid_sensitive:false, diet_sensitive:false,
+    relevance:{ US:["Medium","Limited in most cities; excellent in NYC, Chicago, SF"],
+      UK:["High","Extensive rail and bus network; highly accessible"],
+      EU:["High","World-class transit in most major cities"],
+      FR:["High","SNCF and regional rail excellent; Paris Métro world-class; TGV reduces short-haul flights too"],
+      CN:["High","Expanding high-speed rail and metro networks"],
+      IN:["High","Most households already use transit; expanding networks"],
+      AU:["Low","Poor transit outside Sydney/Melbourne; sprawling cities"],
+      CA:["Medium","Good in Toronto/Vancouver; poor elsewhere"] } },
+
+  { cat:"Transportation", action:"Work from home 2+ days/week",
+    desc:"Eliminating commuting days cuts fuel use and travel emissions substantially.",
+    co2e_us:1200, diff:1, diff_lbl:"Easy", cost_type:"Saves", cost_lo:1000, cost_hi:3000,
+    grid_sensitive:false, diet_sensitive:false,
+    relevance:{ US:["High","High commuting distances; WFH widely adopted post-COVID"],
+      UK:["High","Long commutes; WFH well-established and culturally accepted"],
+      EU:["High","Growing WFH culture; effective in commuter-heavy regions"],
+      FR:["High","Île-de-France commutes are long; télétravail increasingly common"],
+      CN:["Low","WFH less culturally embedded; shorter urban commutes common"],
+      IN:["Low","WFH limited outside tech sector; most workers cannot work remotely"],
+      AU:["High","Long suburban commutes; WFH well adopted post-COVID"],
+      CA:["High","Long commutes in major cities; WFH very common"] } },
+
+  { cat:"Home Energy", action:"Switch to green electricity / rooftop solar",
+    desc:"Sourcing 100% renewable electricity. Impact scales directly with how dirty your current grid is.",
+    co2e_us:2200, diff:2, diff_lbl:"Moderate", cost_type:"Neutral", cost_lo:0, cost_hi:0,
+    grid_sensitive:true, diet_sensitive:false,
+    relevance:{ US:["High","Coal-heavy grid in many states; huge benefit"],
+      UK:["Medium","Grid already 48% renewable; benefit declining as it cleans further"],
+      EU:["Medium","Varies enormously by country; transformative in Poland, minimal in Norway"],
+      FR:["Low","France's grid is 89% low-carbon (nuclear + renewables); minimal additional benefit from switching tariff"],
+      CN:["High","Coal-dominated grid; switching has the largest absolute impact globally"],
+      IN:["High","Very coal-heavy grid; massive solar potential and rapidly falling costs"],
+      AU:["High","Coal-heavy grid historically; world-leading rooftop solar uptake accelerating transition"],
+      CA:["Low","Grid is 68% clean hydro; limited benefit in most provinces"] } },
+
+  { cat:"Home Energy", action:"Electrify home heating (heat pump)",
+    desc:"Replacing gas/oil boiler with a heat pump. CO₂ savings scale with grid cleanliness.",
+    co2e_us:1800, diff:3, diff_lbl:"Hard", cost_type:"Neutral", cost_lo:0, cost_hi:0,
+    grid_sensitive:true, diet_sensitive:false,
+    relevance:{ US:["High","Large gas heating market; heat pumps effective in mild-to-cold climates"],
+      UK:["High","Gas boiler replacement is UK's #1 home decarbonisation priority"],
+      EU:["High","Gas heating dominant across EU; policy push for heat pumps accelerating"],
+      FR:["High","Despite clean grid, gas/oil heating still common; heat pumps cut fuel costs and emissions significantly"],
+      CN:["Medium","Coal district heating in north China; heat pumps growing in cities"],
+      IN:["Low","Minimal space heating needs; cooling (AC) is the larger issue"],
+      AU:["Medium","Mild climate in most cities; gas use significant in southern states"],
+      CA:["Variable","Extremely cold climate increases heating needs but clean grid makes heat pumps very effective"] } },
+
+  { cat:"Home Energy", action:"Improve home insulation & air sealing",
+    desc:"Insulating walls, roof, and sealing drafts reduces heating/cooling energy 10–30%.",
+    co2e_us:900, diff:2, diff_lbl:"Moderate", cost_type:"Saves", cost_lo:200, cost_hi:800,
+    grid_sensitive:false, diet_sensitive:false,
+    relevance:{ US:["High","Many older homes are poorly insulated; large readily available gains"],
+      UK:["High","UK housing stock is among Europe's least energy-efficient; major opportunity"],
+      EU:["High","Older building stock across much of EU; massive retrofit opportunity"],
+      FR:["High","France has a large stock of old, poorly insulated homes especially in rural areas; major policy focus"],
+      CN:["Medium","Rapid new construction mostly well-insulated; older stock in north varies"],
+      IN:["Low","Heating need is minimal; insulation for cooling efficiency is still developing"],
+      AU:["Medium","Homes often poorly insulated for climate; significant cooling gains available"],
+      CA:["High","Extreme cold means insulation savings are proportionally very large"] } },
+
+  { cat:"Home Energy", action:"Replace gas water heater with heat pump model",
+    desc:"Heat pump water heaters use 60–70% less energy than conventional gas or electric resistance models.",
+    co2e_us:700, diff:2, diff_lbl:"Moderate", cost_type:"Saves", cost_lo:300, cost_hi:600,
+    grid_sensitive:true, diet_sensitive:false,
+    relevance:{ US:["High","Gas water heating dominant; large gains available nationwide"],
+      UK:["High","Gas combi-boilers heat water too; combined system replacement very effective"],
+      EU:["High","Gas water heating common across EU; heat pump models improving rapidly"],
+      FR:["Medium","Gas water heating common; chauffe-eau thermodynamique is effective but grid is already clean so CO₂ gains are moderate"],
+      CN:["Medium","Solar water heating already common; electric resistance widespread in cities"],
+      IN:["Medium","Solar water heating growing; electric resistance common in urban areas"],
+      AU:["High","Gas and electric resistance water heating common; heat pump models very effective"],
+      CA:["High","Gas water heating dominant; heat pump very effective especially with clean grid"] } },
+
+  { cat:"Home Energy", action:"Optimize thermostat settings",
+    desc:"Lowering heat 7–10°F (4–5°C) for 8 hrs/day saves ~10% on heating. Smart thermostats automate this.",
+    co2e_us:350, diff:1, diff_lbl:"Easy", cost_type:"Saves", cost_lo:150, cost_hi:300,
+    grid_sensitive:false, diet_sensitive:false,
+    relevance:{ US:["High","Large temperature swings and high heating/cooling demand"],
+      UK:["High","Long heating season; programmable thermostats not yet universal"],
+      EU:["High","Long winters in northern and eastern EU; significant savings available"],
+      FR:["High","Long heating season in much of France; gas/oil heating means direct emissions savings"],
+      CN:["Medium","District heating in north limits individual thermostat control"],
+      IN:["Low","Minimal heating need; benefit mainly from air conditioning optimisation"],
+      AU:["Medium","Cooling demand significant in hot northern states"],
+      CA:["High","Extreme cold means heating is a very large proportion of home energy"] } },
+
+  { cat:"Diet & Food", action:"Adopt a plant-based diet",
+    desc:"Eliminating meat and dairy. Vegan diets generate 50–70% fewer food emissions than high-meat diets.",
+    co2e_us:1600, diff:3, diff_lbl:"Hard", cost_type:"Saves", cost_lo:200, cost_hi:1000,
+    grid_sensitive:false, diet_sensitive:true,
+    relevance:{ US:["High","Among highest meat consumption globally; very large gap to close"],
+      UK:["High","High meat and dairy consumption; growing plant-based market and infrastructure"],
+      EU:["High","High meat consumption across most EU countries; Mediterranean exception"],
+      FR:["High","French cuisine is heavily meat and dairy-centric; viande rouge consumption is high; large impact available"],
+      CN:["Medium","Rising meat consumption; pork-heavy diet; large population amplifies aggregate impact"],
+      IN:["Low","Already low meat consumption; significant vegetarian population; smaller absolute gain"],
+      AU:["High","Among world's highest beef consumption per capita; transformative if adopted widely"],
+      CA:["High","High meat consumption; cold climate also drives high dairy consumption"] } },
+
+  { cat:"Diet & Food", action:"Cut beef & lamb by half",
+    desc:"Ruminants generate ~20× more GHG per gram of protein than plant sources. A 50% cut is highly impactful.",
+    co2e_us:800, diff:2, diff_lbl:"Moderate", cost_type:"Saves", cost_lo:400, cost_hi:800,
+    grid_sensitive:false, diet_sensitive:true,
+    relevance:{ US:["High","Beef is a staple; very high per-capita consumption"],
+      UK:["High","Lamb and beef both culturally central; high consumption"],
+      EU:["High","Beef varies; very high in France, Ireland, Spain"],
+      FR:["High","France has one of EU's highest beef consumption rates; steak culture is strong — 50% cut has major impact"],
+      CN:["Medium","Beef consumption growing rapidly; mutton common in north and west"],
+      IN:["Low","Beef rarely consumed; lamb/mutton limited to certain communities"],
+      AU:["High","World's largest beef exporter; very high domestic consumption"],
+      CA:["High","High beef consumption; BBQ culture strong"] } },
+
+  { cat:"Diet & Food", action:"Reduce household food waste to near zero",
+    desc:"Average household wastes 30–40% of food. Wasted food generates methane in landfill and embeds full production footprint.",
+    co2e_us:600, diff:1, diff_lbl:"Easy", cost_type:"Saves", cost_lo:1500, cost_hi:2500,
+    grid_sensitive:false, diet_sensitive:false,
+    relevance:{ US:["High","US wastes ~30–40% of food supply; one of highest rates globally"],
+      UK:["High","UK households waste ~70kg food/yr on average; major opportunity"],
+      EU:["High","EU wastes ~88m tonnes food/yr; household share ~50%"],
+      FR:["High","France wastes ~10m tonnes food/yr; law against food waste (2016) is model but household waste remains high"],
+      CN:["Medium","Food waste significant in cities and restaurants; growing awareness"],
+      IN:["Medium","Supply chain waste high; household waste generally lower than West"],
+      AU:["High","Australians waste ~7.6m tonnes food/yr; very high per-capita rate"],
+      CA:["High","Canada among highest food waste per capita globally"] } },
+
+  { cat:"Diet & Food", action:"Eat local & seasonal produce",
+    desc:"Reducing air-freighted and out-of-season food (heated greenhouses). Modest vs. diet composition shifts.",
+    co2e_us:250, diff:1, diff_lbl:"Easy", cost_type:"Neutral", cost_lo:0, cost_hi:0,
+    grid_sensitive:false, diet_sensitive:false,
+    relevance:{ US:["Medium","Large country with varied climates; local sourcing feasible for many"],
+      UK:["Medium","Short growing season; imports necessary but local alternatives growing"],
+      EU:["High","Rich agricultural diversity; local sourcing very feasible across EU"],
+      FR:["High","France has excellent local food infrastructure (marchés, AMAP, AOC labels); strong culture of seasonal eating"],
+      CN:["High","Strong local food culture; vast agricultural regions supply cities directly"],
+      IN:["High","Strong tradition of local and seasonal eating; excellent agricultural infrastructure"],
+      AU:["High","Year-round growing season; wide variety of local produce available"],
+      CA:["Low","Short growing season in most regions; local options very limited in winter"] } },
+
+  { cat:"Diet & Food", action:"Switch to organic dairy (if consuming)",
+    desc:"Organic dairy farms emit ~20% less GHG per litre due to soil carbon practices.",
+    co2e_us:120, diff:1, diff_lbl:"Easy", cost_type:"Costs", cost_lo:200, cost_hi:400,
+    grid_sensitive:false, diet_sensitive:false,
+    relevance:{ US:["Low","Modest benefit; reducing dairy intake has far higher impact"],
+      UK:["Medium","Strong organic market; Soil Association certified widely available"],
+      EU:["Medium","Organic dairy market well developed in Northern and Western EU"],
+      FR:["Medium","Organic (bio) dairy well established; Label Rouge and bio certifications widespread; good accessibility"],
+      CN:["Low","Organic dairy very limited in availability and very high cost"],
+      IN:["Low","Organic dairy niche; traditional desi breeds already lower-impact naturally"],
+      AU:["Low","Organic dairy available but premium is high; modest benefit overall"],
+      CA:["Low","Modest benefit; reducing intake has much higher impact"] } },
+
+  { cat:"Goods & Waste", action:"Switch to fossil-free bank & investments",
+    desc:"Banks lend your deposits to fossil fuel projects. Switching divests capital from extraction at scale.",
+    co2e_us:800, diff:2, diff_lbl:"Moderate", cost_type:"Neutral", cost_lo:0, cost_hi:0,
+    grid_sensitive:false, diet_sensitive:false,
+    relevance:{ US:["High","US banks are the largest global fossil fuel lenders"],
+      UK:["High","UK banks significant fossil fuel lenders; green alternatives growing"],
+      EU:["High","EU banks heavily financed fossil fuels; green options expanding rapidly"],
+      FR:["High","BNP Paribas and Crédit Agricole are major fossil fuel financiers globally; Green banks like La Nef available"],
+      CN:["Low","Limited consumer choice in state-dominated banking sector"],
+      IN:["Low","Limited fossil-free banking options; sector is early-stage"],
+      AU:["High","Australian banks heavily finance coal and gas; green alternatives exist"],
+      CA:["High","Canadian banks are major oil sands financiers; green options growing"] } },
+
+  { cat:"Goods & Waste", action:"Buy 50% fewer new clothes",
+    desc:"Fashion generates ~4% of global GHG. Halving purchases, buying secondhand, extending garment life.",
+    co2e_us:500, diff:2, diff_lbl:"Moderate", cost_type:"Saves", cost_lo:800, cost_hi:2000,
+    grid_sensitive:false, diet_sensitive:false,
+    relevance:{ US:["High","Americans buy ~65 garments/yr; very high fast fashion consumption"],
+      UK:["High","UK is Europe's largest fast fashion market per capita"],
+      EU:["High","High consumption across Western EU; secondhand markets growing"],
+      FR:["High","France is a major fashion consumer; however strong vintage/friperie culture makes secondhand very accessible — Paris leads Europe in secondhand"],
+      CN:["Medium","Fast fashion consumption rising rapidly with middle class growth"],
+      IN:["Low","Low per-capita clothing spend; traditional repair and tailoring culture strong"],
+      AU:["High","Australians buy ~27kg clothing/yr; high fast fashion consumption"],
+      CA:["High","High clothing consumption; growing secondhand market"] } },
+
+  { cat:"Goods & Waste", action:"Repair & keep electronics longer",
+    desc:"Manufacturing a smartphone generates 70–90 kg CO₂e. Extending life by 2 years halves annualised emissions.",
+    co2e_us:200, diff:1, diff_lbl:"Easy", cost_type:"Saves", cost_lo:200, cost_hi:600,
+    grid_sensitive:false, diet_sensitive:false,
+    relevance:{ US:["High","Very high electronics turnover; strong upgrade culture"],
+      UK:["High","High upgrade rate; Right to Repair legislation being introduced"],
+      EU:["High","EU Right to Repair Directive 2024 directly supports this action legally"],
+      FR:["High","France pioneered repairability index (indice de réparabilité) in 2021; repair bonus scheme in place"],
+      CN:["Medium","Strong repair culture historically; e-waste growing rapidly with consumerism"],
+      IN:["High","Strong repair culture; economic incentive already makes this the norm"],
+      AU:["High","High electronics spend; limited repair infrastructure but growing"],
+      CA:["High","High upgrade rate; repair café movement growing"] } },
+
+  { cat:"Goods & Waste", action:"Home composting",
+    desc:"Composting food and garden waste prevents methane from landfill and improves soil health.",
+    co2e_us:150, diff:1, diff_lbl:"Easy", cost_type:"Saves", cost_lo:50, cost_hi:150,
+    grid_sensitive:false, diet_sensitive:false,
+    relevance:{ US:["High","Most waste goes to landfill; composting infrastructure limited in many states"],
+      UK:["Medium","Council food waste collections growing; home composting a good supplement"],
+      EU:["Medium","Separate organic waste collections in many EU countries; home composting still additive"],
+      FR:["Medium","France mandated separate bio-waste collection from 2024; home composting supported by communes; strong gardening culture"],
+      CN:["Medium","Rapid expansion of food waste collection in cities"],
+      IN:["Medium","Urban composting infrastructure growing; rural areas often compost naturally"],
+      AU:["High","High landfill rates; limited food waste kerbside collection in many areas"],
+      CA:["Medium","Green bin programmes in many cities; home composting reduces transport emissions"] } },
+
+  { cat:"Goods & Waste", action:"Reduce single-use plastics",
+    desc:"Plastic production is carbon-intensive. Choosing reusables cuts production and waste disposal emissions.",
+    co2e_us:100, diff:1, diff_lbl:"Easy", cost_type:"Saves", cost_lo:50, cost_hi:200,
+    grid_sensitive:false, diet_sensitive:false,
+    relevance:{ US:["High","Very high single-use plastic consumption; limited federal bans in place"],
+      UK:["Medium","Single-use plastic bans in effect since 2021; good progress"],
+      EU:["Medium","SUP Directive 2021 banned many items; ongoing transition"],
+      FR:["Medium","France has some of EU's strictest SUP bans including plastic packaging on fruits/veg from 2022; progress made but enforcement varies"],
+      CN:["High","Massive plastic consumption; bans rolling out but compliance varies widely"],
+      IN:["High","Large plastic waste problem; national SUP ban in effect but patchy enforcement"],
+      AU:["High","All states have plastic bag bans; broader SUPs being addressed state by state"],
+      CA:["Medium","Federal single-use plastic regulations in effect since 2022"] } },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let activeCountry = "United States";
+let activeFilter  = "all";
+let activeSort    = "impact";
+let compareMode   = false;
+let compareMetric = "co2e";
+
+const COUNTRY_LIST = Object.keys(COUNTRIES);
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function adjustedCO2e(action, cdata) {
+  const base = action.co2e_us;
+  if (action.grid_sensitive) return Math.round(base * (cdata.grid_g / US_GRID));
+  if (action.diet_sensitive) return Math.round(base * cdata.meat_idx);
+  return base;
+}
+
+function adjPct(co2e, hh_t) {
+  return Math.round((co2e / (hh_t * 1000)) * 100 * 10) / 10;
+}
+
+function localCost(lo, hi, cdata) {
+  if (lo === 0 && hi === 0) return "Similar overall cost";
+  const s = cdata.symbol;
+  const f = cdata.fx;
+  const rnd = (v) => v >= 200 ? Math.round(v * f / 100) * 100 : Math.round(v * f / 10) * 10;
+  return `${s}${rnd(lo).toLocaleString()}–${s}${rnd(hi).toLocaleString()}`;
+}
+
+function gridColor(g) {
+  if (g < 150) return "#4ade80";
+  if (g < 300) return "#86efac";
+  if (g < 450) return "#fbbf24";
+  if (g < 550) return "#fb923c";
+  return "#f87171";
+}
+
+// ── RENDER SIDEBAR ────────────────────────────────────────────────────────────
+function renderSidebar() {
+  const nav = document.getElementById('country-nav');
+  const mob = document.getElementById('mobile-select');
+  nav.innerHTML = '';
+  mob.innerHTML = '';
+
+  COUNTRY_LIST.forEach(cname => {
+    const cd = COUNTRIES[cname];
+    const btn = document.createElement('button');
+    btn.className = 'country-btn' + (cname === activeCountry && !compareMode ? ' active' : '');
+    btn.dataset.country = cname;
+    btn.innerHTML = `
+      <span class="flag">${cd.flag}</span>
+      <span>${cname}</span>
+      <span class="hh-badge">${cd.hh_t}t</span>
+    `;
+    btn.addEventListener('click', () => { setCountry(cname); });
+    nav.appendChild(btn);
+
+    const opt = document.createElement('option');
+    opt.value = cname;
+    opt.textContent = `${cd.flag} ${cname}`;
+    if (cname === activeCountry) opt.selected = true;
+    mob.appendChild(opt);
+  });
+
+  document.getElementById('compare-toggle-btn').classList.toggle('active', compareMode);
+}
+
+// ── RENDER HEADER ─────────────────────────────────────────────────────────────
+function renderHeader() {
+  if (compareMode) {
+    document.getElementById('hdr-flag').textContent = '⊞';
+    document.getElementById('hdr-name').textContent = 'ALL COUNTRIES';
+    document.getElementById('hdr-sub').textContent = 'Side-by-side comparison of all actions';
+    document.getElementById('kpi-strip').innerHTML = '';
+    document.getElementById('cat-summary').innerHTML = '';
+    return;
+  }
+
+  const cd = COUNTRIES[activeCountry];
+  document.getElementById('hdr-flag').textContent = cd.flag;
+  document.getElementById('hdr-name').textContent = activeCountry.toUpperCase();
+  document.getElementById('hdr-sub').textContent =
+    `Baseline: ${cd.hh_t} t CO₂e/yr  ·  Grid: ${cd.grid_g} gCO₂/kWh  ·  Renewables: ${cd.renew_pct}%  ·  Car ownership: ${cd.car_own}%`;
+
+  // KPIs
+  const allCO2 = ACTIONS.map(a => adjustedCO2e(a, cd));
+  const totalCO2 = allCO2.reduce((s,v)=>s+v,0);
+  const maxPct = Math.max(...ACTIONS.map(a => adjPct(adjustedCO2e(a,cd), cd.hh_t)));
+
+  document.getElementById('kpi-strip').innerHTML = `
+    <div class="kpi">
+      <div class="kpi-val">${cd.hh_t}t</div>
+      <div class="kpi-label">HH Baseline CO₂e/yr</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val">${cd.grid_g}</div>
+      <div class="kpi-label">Grid gCO₂/kWh</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val" style="color:${gridColor(cd.grid_g)}">${cd.renew_pct}%</div>
+      <div class="kpi-label">Renewable electricity</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val">${(totalCO2/1000).toFixed(1)}t</div>
+      <div class="kpi-label">Max combined saving</div>
+    </div>
+  `;
+
+  // Category summary
+  const cats = ["Transportation","Home Energy","Diet & Food","Goods & Waste"];
+  const catEl = document.getElementById('cat-summary');
+  const maxCatTotal = Math.max(...cats.map(c =>
+    ACTIONS.filter(a=>a.cat===c).reduce((s,a)=>s+adjustedCO2e(a,cd),0)
+  ));
+
+  catEl.innerHTML = cats.map(c => {
+    const items = ACTIONS.filter(a => a.cat === c);
+    const tot = items.reduce((s,a)=>s+adjustedCO2e(a,cd),0);
+    const pct = adjPct(tot, cd.hh_t);
+    const barW = Math.round((tot/maxCatTotal)*100);
+    const isActive = activeFilter === c;
+    return `
+    <div class="cs-card${isActive?' active':''}" data-cat="${c}">
+      <div class="cs-label">${c}</div>
+      <div class="cs-val">${(tot/1000).toFixed(1)}<span style="font-size:16px;color:var(--muted)">t</span></div>
+      <div class="cs-sub">${pct}% of footprint · ${items.length} actions</div>
+      <div class="cs-bar" style="width:${barW}%"></div>
+    </div>`;
+  }).join('');
+
+  // Cat card click filter
+  document.querySelectorAll('.cs-card').forEach(el => {
+    el.addEventListener('click', () => {
+      const cat = el.dataset.cat;
+      activeFilter = activeFilter === cat ? 'all' : cat;
+      document.querySelectorAll('.ftag').forEach(b => b.classList.remove('active'));
+      const matchBtn = document.querySelector(`.ftag[data-cat="${activeFilter}"]`);
+      if (matchBtn) matchBtn.classList.add('active');
+      renderHeader();
+      renderCards();
+    });
+  });
+}
+
+// ── RENDER CARDS ──────────────────────────────────────────────────────────────
+function renderCards() {
+  const cd = COUNTRIES[activeCountry];
+  const maxCO2 = Math.max(...ACTIONS.map(a => adjustedCO2e(a, cd)));
+  const grid = document.getElementById('cards-grid');
+
+  let filtered = ACTIONS.filter(a => activeFilter === 'all' || a.cat === activeFilter);
+
+  if (activeSort === 'impact') filtered.sort((a,b) => adjustedCO2e(b,cd) - adjustedCO2e(a,cd));
+  else if (activeSort === 'pct') filtered.sort((a,b) => adjPct(adjustedCO2e(b,cd),cd.hh_t) - adjPct(adjustedCO2e(a,cd),cd.hh_t));
+  else if (activeSort === 'easy') filtered.sort((a,b) => a.diff - b.diff);
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="no-results">No actions match this filter.</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map((a, i) => {
+    const co2e = adjustedCO2e(a, cd);
+    const pct  = adjPct(co2e, cd.hh_t);
+    const barW = Math.round((co2e / maxCO2) * 100);
+    const [rel, relNote] = a.relevance[cd.code];
+    const cost = localCost(a.cost_lo, a.cost_hi, cd);
+    const diffDots = [1,2,3].map(n => {
+      const cls = n <= a.diff ? (a.diff===1?'easy':a.diff===2?'mod':'hard') : '';
+      return `<div class="diff-dot ${cls}"></div>`;
+    }).join('');
+
+    const fmt = co2e >= 1000 ? `${(co2e/1000).toFixed(1)}k` : co2e;
+
+    return `
+    <div class="card" data-cat="${a.cat}" style="animation-delay:${i*0.035}s">
+      <div class="card-top">
+        <span class="cat-tag" data-cat="${a.cat}">${a.cat}</span>
+        <span class="rel-tag ${rel}">● ${rel}</span>
+      </div>
+      <div class="card-title">${a.action}</div>
+      <div class="card-desc">${a.desc}</div>
+
+      <div class="co2-row">
+        <span class="co2-val">${fmt}</span>
+        <span class="co2-unit">kg CO₂e<br>saved/yr</span>
+      </div>
+
+      <div class="bar-wrap">
+        <div class="bar-meta">
+          <span>% of household footprint</span>
+          <span class="bar-pct">${pct}%</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${barW}%"></div>
+        </div>
+      </div>
+
+      <div class="metrics">
+        <div>
+          <div class="metric-label">Difficulty</div>
+          <div style="display:flex;align-items:center">
+            <div class="diff-dots">${diffDots}</div>
+            <span class="diff-label ${a.diff_lbl}">${a.diff_lbl}</span>
+          </div>
+        </div>
+        <div>
+          <div class="metric-label">Cost impact</div>
+          <div class="cost-pill ${a.cost_type}">${a.cost_type==='Saves'?'↓':a.cost_type==='Costs'?'↑':'→'} ${a.cost_type}</div>
+          <div class="cost-detail">${a.cost_type!=='Neutral'?cost:''}</div>
+        </div>
+        <div class="rel-note">${relNote}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER COMPARE TABLE ──────────────────────────────────────────────────────
+function renderCompare() {
+  const table = document.getElementById('compare-table');
+  const cats = ["Transportation","Home Energy","Diet & Food","Goods & Waste"];
+
+  let thead = `<thead><tr>
+    <th class="action-col">Action</th>
+    <th>Category</th>`;
+  COUNTRY_LIST.forEach(cn => {
+    thead += `<th class="country-th">${COUNTRIES[cn].flag} ${cn.replace(' ','<br>')}</th>`;
+  });
+  thead += `</tr></thead>`;
+
+  let tbody = '<tbody>';
+  cats.forEach(cat => {
+    const catActions = ACTIONS.filter(a => a.cat === cat);
+    tbody += `<tr class="cat-divider">
+      <td style="color:var(--c-${cat==='Transportation'?'transport':cat==='Home Energy'?'energy':cat==='Diet & Food'?'diet':'goods'})">${cat.toUpperCase()}</td>
+      <td colspan="${COUNTRY_LIST.length + 1}"></td>
+    </tr>`;
+
+    catActions.forEach(a => {
+      tbody += `<tr>
+        <td class="action-name">${a.action}</td>
+        <td class="cat-cell" style="color:var(--c-${cat==='Transportation'?'transport':cat==='Home Energy'?'energy':cat==='Diet & Food'?'diet':'goods'})">${cat}</td>`;
+
+      COUNTRY_LIST.forEach(cn => {
+        const cd = COUNTRIES[cn];
+        const co2e = adjustedCO2e(a, cd);
+        const pct  = adjPct(co2e, cd.hh_t);
+        const [rel] = a.relevance[cd.code];
+
+        if (compareMetric === 'co2e') {
+          tbody += `<td class="co2-cell">${co2e.toLocaleString()}</td>`;
+        } else if (compareMetric === 'pct') {
+          tbody += `<td class="pct-cell">${pct}%</td>`;
+        } else {
+          tbody += `<td class="rel-cell ${rel}">${rel}</td>`;
+        }
+      });
+      tbody += '</tr>';
+    });
+  });
+  tbody += '</tbody>';
+
+  table.innerHTML = thead + tbody;
+}
+
+// ── STATE CHANGES ─────────────────────────────────────────────────────────────
+function setCountry(name) {
+  activeCountry = name;
+  compareMode   = false;
+  activeFilter  = 'all';
+  document.querySelectorAll('.ftag').forEach(b => b.classList.remove('active'));
+  document.querySelector('.ftag[data-cat="all"]').classList.add('active');
+  document.getElementById('actions-view').classList.remove('hidden');
+  document.getElementById('compare-view').classList.remove('active');
+  renderSidebar();
+  renderHeader();
+  renderCards();
+}
+
+function toggleCompare() {
+  compareMode = !compareMode;
+  document.getElementById('actions-view').classList.toggle('hidden', compareMode);
+  document.getElementById('compare-view').classList.toggle('active', compareMode);
+  renderSidebar();
+  renderHeader();
+  if (compareMode) renderCompare();
+}
+
+// ── EVENT WIRING ──────────────────────────────────────────────────────────────
+document.getElementById('compare-toggle-btn').addEventListener('click', toggleCompare);
+
+document.getElementById('mobile-select').addEventListener('change', e => setCountry(e.target.value));
+
+document.querySelectorAll('.ftag').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ftag').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.cat;
+    renderHeader();
+    renderCards();
+  });
+});
+
+document.querySelectorAll('.sort-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeSort = btn.dataset.sort;
+    renderCards();
+  });
+});
+
+document.querySelectorAll('.ctoggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ctoggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    compareMetric = btn.dataset.mode;
+    renderCompare();
+  });
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderSidebar();
+renderHeader();
+renderCards();
+</script>
+</body>
+</html>
